@@ -1,0 +1,4 @@
+list_cities = ["москва", "иЖЕВСк", "Владивосток", "новосибирсК", "мУРМАНСК"]
+
+list_cities = [city.capitalize() for city in list_cities]  # TODO метод строки capitalize делает первую букву заглавной, а все остальные строчными
+print(list_cities)
