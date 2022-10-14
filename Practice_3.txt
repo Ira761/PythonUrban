@@ -1,0 +1,99 @@
+#Часть 1. Работа с GeoPandas.
+!pip install pydantic
+import requests
+def get_google_drive_download_url(url):
+    drive_id = url.split("/")[5]
+    return f"https://drive.google.com/uc?export=download&id={drive_id}" #мы порезали ссылку и ее кусок вставляем в функцию
+
+src_url_file = "https://drive.google.com/file/d/10OcNLLaNCex8k9OsOdTsnN_6SBAgfeDY/view?usp=sharing"
+download_url = get_google_drive_download_url(src_url_file)
+print(download_url)
+src_url_file = "https://drive.google.com/file/d/10OcNLLaNCex8k9OsOdTsnN_6SBAgfeDY/view?usp=sharing"
+
+download_url = get_google_drive_download_url(src_url_file)
+resp = requests.get(download_url) #что значит этот ответ?? список 200?
+resp
+SHOP_CENTERS_DATA = resp.json()
+SHOP_CENTERS_DATA
+print(SHOP_CENTERS_DATA["type"])
+SHOP_CENTERS_FEATURES = SHOP_CENTERS_DATA["features"] 
+print(len(SHOP_CENTERS_FEATURES))
+SHOP_CENTERS_FEATURE1 = SHOP_CENTERS_FEATURES[0]
+SHOP_CENTERS_FEATURE1
+SHOP_CENTERS_PROPERTIES1 = SHOP_CENTERS_FEATURE1["properties"]
+SHOP_CENTERS_PROPERTIES1
+!pip install geopandas
+!pip install -U folium matplotlib mapclassify
+import geopandas as gpd
+
+def get_google_drive_download_url(url):
+    drive_id = url.split("/")[5]
+    return f"https://drive.google.com/uc?export=download&id={drive_id}"
+google_drive_url = "https://drive.google.com/file/d/10OcNLLaNCex8k9OsOdTsnN_6SBAgfeDY/view?usp=sharing"
+url = get_google_drive_download_url(google_drive_url)
+
+gdf = gpd.read_file(url)
+gdf
+gdf.info()
+gdf.explore()
+#Часть 2. Работа с pydantic и geojson-pydantic.
+!pip install pydantic
+from typing import Optional  # встроенный в python модуль
+
+from pydantic import BaseModel, Field  # дополнительно установленный модуль
+from pydantic.error_wrappers import ValidationError  # дополнительно установленный модуль
+SHOP_CENTERS_FEATURES = SHOP_CENTERS_DATA["features"] 
+SHOP_CENTERS_FEATURE1 = SHOP_CENTERS_FEATURES[0]
+SHOP_CENTERS_FEATURE1
+SHOP_CENTERS_PROPERTIES1 = SHOP_CENTERS_FEATURE1["properties"]
+SHOP_CENTERS_PROPERTIES1
+class ShopCentersProperties(BaseModel):
+    Address: str
+    Name: str
+
+prop = ShopCentersProperties(**SHOP_CENTERS_PROPERTIES1)
+prop
+shop_centers_list = []
+for feature in SHOP_CENTERS_FEATURES:
+  properties = feature["properties"]
+  shop_centers_list.append(ShopCentersProperties(**properties))
+
+shop_centers_list
+class ShopCentersProperties(BaseModel):
+    Name: str
+    
+    CityFunction: str = Field(..., alias="City function")  # сопоставляем python название CityFunction с названием City function
+    Type: str
+    Address: str
+    CoordinatesY: str = Field(..., alias="Coordinates y")
+    CoordinatesX: str = Field(..., alias="Coordinates x")
+    CoordinatesXY: str = Field(..., alias="Coordinates xy")
+    Opening_hours: str
+    Contact_website: str = Field(..., alias="Contact:website")
+    Contact_phone: None = Field(..., alias="Contact:phone")
+
+shop_center1 = ShopCentersProperties(**SHOP_CENTERS_PROPERTIES1)
+
+shop_center1
+shop_center1.dict(by_alias=True)
+#Часть 3. Валидация данных.
+!pip install geojson-pydantic
+from typing import Union
+
+import requests
+from pydantic import BaseModel
+from geojson_pydantic import FeatureCollection, Point, Polygon
+feature_collection = FeatureCollection(**SHOP_CENTERS_DATA)
+feature_collection
+class ShopCentersProperties(BaseModel):
+    Address: str
+    Name: str
+    Contact_website: Optional[str] = Field(..., alias="Contact:website")
+
+ShopCentersFeatureCollection = FeatureCollection[Point, ShopCentersProperties]
+try:
+    feature_collection = ShopCentersFeatureCollection(**SHOP_CENTERS_DATA)
+except ValidationError as e:
+    print(e.json())
+feature_collection = ShopCentersFeatureCollection(**SHOP_CENTERS_DATA)
+feature_collection.dict()
